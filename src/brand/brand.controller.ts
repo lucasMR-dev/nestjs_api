@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, UseInterceptors, UploadedFile, HttpException, HttpStatus } from '@nestjs/common';
 import { BrandService } from './brand.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
@@ -6,15 +6,28 @@ import { Public } from 'src/auth/constants';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import path = require("path");
+import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Multer Upload Storage Config
+ * Multer Upload Config
  */
-export const storage = {
+export const multerConfig = {
+  limits: {
+    fileSize: 12000000,
+  },
+  fileFilter: (req: any, file: any, cb: any) => {
+    if (file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
+      // Allow storage of file
+      cb(null, true);
+    } else {
+      // Reject file
+      cb(new HttpException(`Unsupported file type ${path.extname(file.originalname)}`, HttpStatus.BAD_REQUEST), false);
+    }
+  },
   storage: diskStorage({
     destination: './Public/uploads',
     filename: (req, file, cb) => {
-      const filename: string = path.parse(file.originalname).name.replace(/\s/g, '');
+      const filename: string = path.parse(file.originalname).name.replace(/\s/g, '') + uuidv4();
       const extenseion: string = path.parse(file.originalname).ext;
 
       cb(null, `${filename}${extenseion}`);
@@ -41,11 +54,17 @@ export class BrandController {
   }
 
   @Post()
-  @UseInterceptors(FileInterceptor('logo', storage))
+  @UseInterceptors(FileInterceptor('logo', multerConfig))
   create(@UploadedFile() file, @Body() createBrandDto: CreateBrandDto) {
-    // Pass logo filename after upload
-    createBrandDto.logo = file.filename;
-    return this.brandService.createBrand(createBrandDto);
+    //Check if a file is uploaded
+    if (file) {
+      // Pass logo filename after upload
+      createBrandDto.logo = file.filename;
+      return this.brandService.createBrand(createBrandDto);
+    }
+    else {
+      throw new HttpException('Not file detected', HttpStatus.BAD_REQUEST)
+    }
   }
 
   @Patch(':id')
