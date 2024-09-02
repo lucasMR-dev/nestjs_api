@@ -1,11 +1,29 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UsePipes, ValidationPipe, UseInterceptors, UploadedFile } from '@nestjs/common';
 import { BrandService } from './brand.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { Public } from 'src/auth/constants';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import path = require("path");
+
+/**
+ * Multer Upload Storage Config
+ */
+export const storage = {
+  storage: diskStorage({
+    destination: './Public/uploads',
+    filename: (req, file, cb) => {
+      const filename: string = path.parse(file.originalname).name.replace(/\s/g, '');
+      const extenseion: string = path.parse(file.originalname).ext;
+
+      cb(null, `${filename}${extenseion}`);
+    }
+  })
+}
 
 @Controller('brand')
-@UsePipes(new ValidationPipe())
+//@UsePipes(new ValidationPipe())
 export class BrandController {
   constructor(private readonly brandService: BrandService) { }
 
@@ -23,7 +41,10 @@ export class BrandController {
   }
 
   @Post()
-  create(@Body() createBrandDto: CreateBrandDto) {
+  @UseInterceptors(FileInterceptor('logo', storage))
+  create(@UploadedFile() file, @Body() createBrandDto: CreateBrandDto) {
+    // Pass logo filename after upload
+    createBrandDto.logo = file.filename;
     return this.brandService.createBrand(createBrandDto);
   }
 
