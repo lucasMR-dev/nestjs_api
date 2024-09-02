@@ -48,18 +48,6 @@ export class UserController {
   }
 
   /**
-  * Post decorator represents method of request as we have used post decorator the method
-  * of this API will be post.
-  * so the API URL to create User will be
-  * 
-  */
-  @Post()
-  @Public()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.userService.createUser(createUserDto);
-  }
-
-  /**
    * we have used patch decorator with id param to get id from request
    * so the API URL will be
    * 
