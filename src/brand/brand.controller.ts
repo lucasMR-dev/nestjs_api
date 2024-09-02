@@ -6,6 +6,7 @@ import { Public } from 'src/auth/constants';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import path = require("path");
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Multer Upload Storage Config
@@ -14,7 +15,7 @@ export const storage = {
   storage: diskStorage({
     destination: './Public/uploads',
     filename: (req, file, cb) => {
-      const filename: string = path.parse(file.originalname).name.replace(/\s/g, '');
+      const filename: string = path.parse(file.originalname).name.replace(/\s/g, '')+uuidv4();
       const extenseion: string = path.parse(file.originalname).ext;
 
       cb(null, `${filename}${extenseion}`);
